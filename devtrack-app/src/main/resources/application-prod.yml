@@ -1,0 +1,62 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  # 生产 MySQL,对齐 nx-skyline 的 Hikari 配置习惯;敏感信息走环境变量
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/devtrack?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true}
+    username: ${DB_USERNAME:devtrack}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      maximum-pool-size: 10
+      idle-timeout: 60000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+      pool-name: DevTrackHikariCP
+
+  jpa:
+    database: mysql
+    hibernate:
+      # 生产由 Flyway 全权管理 schema;先用 none 避免类型校验误报,
+      # 团队核对列 parity 后可改为 validate 以捕获 schema 漂移
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false
+
+  # 生产数据源缓存(可选,对齐团队 Redis 习惯)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+devtrack:
+  feishu:
+    webhook-url: ${FEISHU_WEBHOOK_URL:}
+    defect-url-base: ${DEFECT_URL_BASE:https://devtrack.example.com/defect/}
+  integration:
+    api-token: ${DEVTRACK_API_TOKEN:}
+  token:
+    # 生产用 Redis 缓存登录态
+    store: redis
+  storage:
+    type: ${DEVTRACK_STORAGE_TYPE:local}
+    endpoint: ${DEVTRACK_STORAGE_ENDPOINT:http://localhost:9000}
+    access-key: ${DEVTRACK_STORAGE_ACCESS_KEY:}
+    secret-key: ${DEVTRACK_STORAGE_SECRET_KEY:}
+    bucket: ${DEVTRACK_STORAGE_BUCKET:devtrack}
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: ["health", "prometheus"]

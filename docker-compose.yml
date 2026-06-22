@@ -1,0 +1,50 @@
+# DevTrack 全栈本地编排:app + MySQL + Redis + MinIO
+# 用法: docker compose up -d   (首次会构建 app 镜像)
+# 起来后后端在 :8080,Swagger 在 :8080/swagger-ui/index.html
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: devtrack
+      MYSQL_USER: devtrack
+      MYSQL_PASSWORD: devtrack123
+    ports: ["3306:3306"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot123"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports: ["9000:9000", "9001:9001"]
+
+  app:
+    build: .
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://mysql:3306/devtrack?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      DB_USERNAME: devtrack
+      DB_PASSWORD: devtrack123
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      DEVTRACK_API_TOKEN: dvt_live_demo_token
+      # 附件走 MinIO(在 application-prod.yml 里把 devtrack.storage.type 设为 minio 并注入下列变量)
+      DEVTRACK_STORAGE_TYPE: minio
+      DEVTRACK_STORAGE_ENDPOINT: http://minio:9000
+      DEVTRACK_STORAGE_ACCESS_KEY: minioadmin
+      DEVTRACK_STORAGE_SECRET_KEY: minioadmin
+      DEVTRACK_STORAGE_BUCKET: devtrack
+    ports: ["8080:8080"]

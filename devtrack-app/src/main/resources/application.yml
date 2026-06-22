@@ -1,0 +1,42 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: devtrack
+  profiles:
+    # 本地默认 local(H2,零基础设施);生产用 --spring.profiles.active=prod
+    active: local
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  data:
+    redis:
+      # 只用 RedisTemplate 做登录态,不用 Redis 仓库;关掉仓库扫描避免误扫 JPA repo 的告警
+      repositories:
+        enabled: false
+
+devtrack:
+  feishu:
+    # 复用团队现成的自定义机器人 Webhook;留空则只打日志不真正发送
+    webhook-url: ""
+    defect-url-base: "http://localhost:5173/defect/"
+  integration:
+    # pytest/CI 上报用的 API Token(演示用),生产改查 intg_api_token 表
+    api-token: "dvt_live_demo_token"
+  token:
+    # 登录态存储:memory(本地零依赖) / redis(生产)
+    store: memory
+  storage:
+    # 附件存储:local(本地文件系统,默认零依赖) / minio(生产)
+    type: local
+
+logging:
+  level:
+    com.nx.devtrack: info

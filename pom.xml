@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 对齐团队 nx-skyline-server 工程约定:Spring Boot 3.2.0 + Java 17 + Maven 多模块 -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.0</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.nx</groupId>
+    <artifactId>devtrack-server</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>devtrack-server</name>
+    <description>DevTrack 缺陷管理 / 团队协作平台</description>
+
+    <modules>
+        <module>devtrack-common</module>
+        <module>devtrack-app</module>
+    </modules>
+
+    <properties>
+        <java.version>17</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <devtrack.version>1.0.0-SNAPSHOT</devtrack.version>
+        <!--
+          生产对齐:团队 nx-common-springboot-* 基础库版本。
+          当前脚手架为「自包含」实现(自带 BaseModel/CommonResponse 等),
+          接入团队 CodeArtifact 后可逐步替换为下列依赖,删除本地等价类。
+        <nx-common.version>1.0.0-SNAPSHOT</nx-common.version>
+        -->
+        <xxl-job.version>2.4.0</xxl-job.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.nx</groupId>
+                <artifactId>devtrack-common</artifactId>
+                <version>${devtrack.version}</version>
+            </dependency>
+
+            <!-- 团队定时任务栈(燃尽快照/超期扫描会用到,先锁版本) -->
+            <dependency>
+                <groupId>com.xuxueli</groupId>
+                <artifactId>xxl-job-core</artifactId>
+                <version>${xxl-job.version}</version>
+            </dependency>
+
+            <!--
+              生产可启用:复用团队基础库(需 CodeArtifact 访问)
+            <dependency>
+                <groupId>com.nx</groupId>
+                <artifactId>nx-common-springboot-jpa</artifactId>
+                <version>${nx-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nx</groupId>
+                <artifactId>nx-common-springboot-web</artifactId>
+                <version>${nx-common.version}</version>
+            </dependency>
+            -->
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>
