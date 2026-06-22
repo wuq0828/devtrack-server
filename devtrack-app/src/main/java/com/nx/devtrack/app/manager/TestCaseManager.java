@@ -8,6 +8,7 @@ import com.nx.devtrack.common.dto.TestCaseDto;
 import com.nx.devtrack.common.exception.BizException;
 import com.nx.devtrack.common.exception.Errors;
 import com.nx.devtrack.common.request.CreateTestCaseReq;
+import com.nx.devtrack.common.request.UpdateTestCaseReq;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,6 +66,30 @@ public class TestCaseManager {
         return testCaseDao.save(tc);
     }
 
+    @Transactional
+    public TestCase update(UpdateTestCaseReq req, Long userId) {
+        TestCase tc = testCaseDao.findById(req.getTestCaseId())
+                .orElseThrow(() -> new BizException(Errors.PARAM_INVALID.getCode(), "用例不存在"));
+        permissionManager.checkPermission(userId, Perms.BUG_UPDATE, tc.getProjectId());
+        tc.setTitle(req.getTitle());
+        tc.setPreconditions(req.getPreconditions());
+        tc.setSteps(req.getSteps());
+        tc.setExpected(req.getExpected());
+        tc.setAutomationKey(req.getAutomationKey());
+        return testCaseDao.save(tc);
+    }
+
+    @Transactional
+    public void delete(Long testCaseId, Long userId) {
+        TestCase tc = testCaseDao.findById(testCaseId)
+                .orElseThrow(() -> new BizException(Errors.PARAM_INVALID.getCode(), "用例不存在"));
+        permissionManager.checkPermission(userId, Perms.BUG_DELETE, tc.getProjectId());
+        // Soft delete: the entity's @SQLRestriction("deleted = false") filters it
+        // from all subsequent reads, preserving any test-run references to the row.
+        tc.setDeleted(true);
+        testCaseDao.save(tc);
+    }
+
     public TestCaseDto toDto(TestCase tc) {
         TestCaseDto dto = new TestCaseDto();
         dto.setId(tc.getId());
@@ -75,6 +100,7 @@ public class TestCaseManager {
         dto.setExpected(tc.getExpected());
         dto.setStatus(tc.getStatus());
         dto.setAutomationKey(tc.getAutomationKey());
+        dto.setRegression(tc.isRegression());
         dto.setCreateTime(tc.getCreateTime() == null ? null
                 : tc.getCreateTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
         return dto;

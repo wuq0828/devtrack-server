@@ -1,8 +1,8 @@
 package com.nx.devtrack.app.manager;
 
 import com.nx.devtrack.app.ai.ClaudeTestCaseGenerator;
+import com.nx.devtrack.app.ai.GenArtifacts;
 import com.nx.devtrack.app.ai.HeuristicTestCaseGenerator;
-import com.nx.devtrack.app.ai.TestCaseGenerator;
 import com.nx.devtrack.app.security.PermissionManager;
 import com.nx.devtrack.app.security.Perms;
 import com.nx.devtrack.common.dto.GenCaseDto;
@@ -31,25 +31,42 @@ public class AiTestCaseManager {
     public GenCasesResultDto genCases(Long projectId, String prd, Long userId) {
         permissionManager.checkPermission(userId, Perms.BUG_VIEW, projectId);
 
-        TestCaseGenerator generator = heuristicGenerator;
-        String engine = "heuristic";
         if (claudeGenerator.available()) {
             try {
-                List<GenCaseDto> cases = claudeGenerator.generate(prd);
-                if (!cases.isEmpty()) {
-                    GenCasesResultDto dto = new GenCasesResultDto();
-                    dto.setEngine("claude");
-                    dto.setCases(cases);
-                    return dto;
+                GenArtifacts art = claudeGenerator.generate(prd);
+                if (art.cases() != null && !art.cases().isEmpty()) {
+                    return toResult("claude", art, prd);
                 }
                 log.warn("[AI] Claude 返回空,回退启发式");
             } catch (Exception e) {
                 log.warn("[AI] Claude 调用失败,回退启发式: {}", e.getMessage());
             }
         }
+        return toResult("heuristic", heuristicGenerator.generate(prd), prd);
+    }
+
+    /**
+     * 组装返回结果。若模型未给出流程图/脑图(claude 偶发省略),用启发式生成的确定性图回填,
+     * 保证前端总能拿到两张可渲染的图。
+     */
+    private GenCasesResultDto toResult(String engine, GenArtifacts art, String prd) {
         GenCasesResultDto dto = new GenCasesResultDto();
         dto.setEngine(engine);
-        dto.setCases(generator.generate(prd));
+        dto.setCases(art.cases());
+
+        String flowchart = art.flowchart();
+        String mindmap = art.mindmap();
+        if (flowchart == null || mindmap == null) {
+            GenArtifacts fallback = heuristicGenerator.generate(prd);
+            if (flowchart == null) {
+                flowchart = fallback.flowchart();
+            }
+            if (mindmap == null) {
+                mindmap = fallback.mindmap();
+            }
+        }
+        dto.setFlowchart(flowchart);
+        dto.setMindmap(mindmap);
         return dto;
     }
 

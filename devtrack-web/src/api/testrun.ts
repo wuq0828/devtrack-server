@@ -1,7 +1,5 @@
 import { request } from '@/utils/request'
 import type {
-  TestCaseDto,
-  TestCaseSetRegressionRequest,
   TestRunCreateRequest,
   TestRunDetailRequest,
   TestRunDetailResult,
@@ -46,14 +44,6 @@ export function setTestRunResult(payload: TestRunSetResultRequest): Promise<Test
 export function createRegressionRun(payload: TestRunRegressionRequest): Promise<TestRunDto> {
   return request<TestRunDto>({
     url: '/testrun/regression',
-    method: 'post',
-    data: payload,
-  })
-}
-
-export function setTestCaseRegression(payload: TestCaseSetRegressionRequest): Promise<TestCaseDto> {
-  return request<TestCaseDto>({
-    url: '/testcase/set-regression',
     method: 'post',
     data: payload,
   })

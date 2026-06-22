@@ -18,6 +18,16 @@ export interface LoginResult {
   admin: boolean
 }
 
+/**
+ * 飞书授权 URL 接口返回。已配 appId 时返回 authorizeUrl;
+ * 未配(dev 模式)时返回 devMode + hint。
+ */
+export interface FeishuAuthorizeUrlResult {
+  authorizeUrl?: string
+  devMode?: string
+  hint?: string
+}
+
 // ---- Enums ----
 export type Severity = 'BLOCKER' | 'CRITICAL' | 'MAJOR' | 'MINOR' | 'TRIVIAL'
 
@@ -260,6 +270,19 @@ export interface TestCaseUpdateStatusRequest {
   status: TestCaseStatus
 }
 
+export interface TestCaseUpdateRequest {
+  testCaseId: number
+  title: string
+  preconditions: string
+  steps: string
+  expected: string
+  automationKey?: string | null
+}
+
+export interface TestCaseDeleteRequest {
+  testCaseId: number
+}
+
 // ---- Stats ----
 export interface DefectStatsRequest {
   projectId: number
@@ -439,6 +462,10 @@ export interface AiGenCasesRequest {
 export interface AiGenCasesResult {
   engine: AiEngine
   cases: GenCase[]
+  /** 业务流程图(Mermaid flowchart 文本) */
+  flowchart?: string | null
+  /** 测试点脑图(Mermaid mindmap 文本) */
+  mindmap?: string | null
 }
 
 export interface AiSaveCasesRequest {

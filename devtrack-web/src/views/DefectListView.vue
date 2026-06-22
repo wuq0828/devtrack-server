@@ -528,7 +528,7 @@ onMounted(fetchList)
 
 .topbar {
   height: 56px;
-  background: #409eff;
+  background: #818cf8;
   color: #fff;
   display: flex;
   align-items: center;
@@ -591,13 +591,13 @@ onMounted(fetchList)
   gap: 12px;
   margin-bottom: 12px;
   padding: 10px 12px;
-  background: #ecf5ff;
+  background: rgba(99,102,241,0.16);
   border: 1px solid #d9ecff;
   border-radius: 4px;
 }
 
 .batch-info {
-  color: #409eff;
+  color: #818cf8;
   font-size: 13px;
   font-weight: 600;
 }
