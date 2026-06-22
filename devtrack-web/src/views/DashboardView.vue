@@ -223,7 +223,15 @@ function priorityLabel(code: string): string {
 
 const statusPieOption = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-  legend: { bottom: 0, type: 'scroll' },
+  legend: {
+    bottom: 0,
+    type: 'scroll',
+    itemGap: 16,
+    itemWidth: 10,
+    itemHeight: 10,
+    icon: 'circle',
+    textStyle: { color: '#8b93ad', fontSize: 12 },
+  },
   series: [
     {
       name: '状态分布',
@@ -232,7 +240,14 @@ const statusPieOption = computed<EChartsOption>(() => ({
       center: ['50%', '45%'],
       avoidLabelOverlap: true,
       itemStyle: { borderRadius: 6, borderColor: '#0b0f1a', borderWidth: 2 },
-      label: { formatter: '{b}\n{c}' },
+      label: {
+        formatter: '{name|{b}}\n{value|{c}}',
+        lineHeight: 20,
+        rich: {
+          name: { color: '#94a0bd', fontSize: 12, fontWeight: 400 },
+          value: { color: '#c4cce8', fontSize: 17, fontWeight: 600 },
+        },
+      },
       data: statusEntries.value.map(([key, value]) => ({
         name: statusLabel(key),
         value,

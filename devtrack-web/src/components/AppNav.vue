@@ -3,6 +3,7 @@
     class="nav-menu"
     mode="horizontal"
     menu-trigger="click"
+    unique-opened
     :default-active="activeIndex"
     router
     background-color="transparent"

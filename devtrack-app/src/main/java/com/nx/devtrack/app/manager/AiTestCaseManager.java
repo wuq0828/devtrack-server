@@ -1,6 +1,7 @@
 package com.nx.devtrack.app.manager;
 
 import com.nx.devtrack.app.ai.ClaudeTestCaseGenerator;
+import com.nx.devtrack.app.ai.FeishuDocReader;
 import com.nx.devtrack.app.ai.GenArtifacts;
 import com.nx.devtrack.app.ai.HeuristicTestCaseGenerator;
 import com.nx.devtrack.app.security.PermissionManager;
@@ -27,9 +28,16 @@ public class AiTestCaseManager {
     private final HeuristicTestCaseGenerator heuristicGenerator;
     private final TestCaseManager testCaseManager;
     private final PermissionManager permissionManager;
+    private final FeishuDocReader feishuDocReader;
 
     public GenCasesResultDto genCases(Long projectId, String prd, Long userId) {
         permissionManager.checkPermission(userId, Perms.BUG_VIEW, projectId);
+
+        // 若传入的是飞书文档链接,先读取其真实正文作为 PRD。
+        if (feishuDocReader.isFeishuUrl(prd)) {
+            log.info("[AI] 检测到飞书链接,读取文档正文作为 PRD");
+            prd = feishuDocReader.readContent(prd);
+        }
 
         if (claudeGenerator.available()) {
             try {

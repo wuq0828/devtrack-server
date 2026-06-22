@@ -46,7 +46,14 @@ function loadMermaid() {
         // SVG <text> labels (not <foreignObject>/HTML) so the diagram can be
         // rasterised to PNG reliably via canvas.
         htmlLabels: false,
-        flowchart: { htmlLabels: false },
+        flowchart: {
+          htmlLabels: false,
+          nodeSpacing: 45,
+          rankSpacing: 55,
+          padding: 14,
+          curve: 'basis',
+          useMaxWidth: true,
+        },
         themeVariables: {
           primaryColor: '#1b2236',
           primaryBorderColor: '#6366f1',
@@ -75,13 +82,38 @@ async function render() {
     // Validate first so an invalid diagram doesn't throw into the DOM.
     const ok = await mermaid.parse(code, { suppressErrors: true })
     if (!ok) throw new Error('parse failed')
-    const { svg } = await mermaid.render(`mmd-${seq++}`, code)
+    const svg = await renderToSvg(mermaid, code)
     await nextTick()
     if (host.value) host.value.innerHTML = svg
   } catch {
     error.value = true
   } finally {
     rendering.value = false
+  }
+}
+
+/**
+ * Render with a collision-proof id and a one-shot retry. Mermaid injects a
+ * temp <div id="d{id}"> while rendering; a stale leftover (e.g. after a dev
+ * HMR reload) with the same id makes render throw. Unique ids + pre-cleanup
+ * + retry keep rendering reliable.
+ */
+async function renderToSvg(
+  mermaid: Awaited<ReturnType<typeof loadMermaid>>,
+  code: string,
+): Promise<string> {
+  const attempt = async (): Promise<string> => {
+    const id = `mmd-${seq++}-${Math.floor(Math.random() * 1e9)}`
+    document.getElementById(id)?.remove()
+    document.getElementById(`d${id}`)?.remove()
+    const { svg } = await mermaid.render(id, code)
+    return svg
+  }
+  try {
+    return await attempt()
+  } catch {
+    // Single retry — clears transient state left by a previous failed render.
+    return await attempt()
   }
 }
 
