@@ -289,12 +289,12 @@ onMounted(fetchList)
 
 .detail-label {
   font-weight: 600;
-  color: #606266;
+  color: #9298b4;
   flex: 0 0 auto;
 }
 
 .detail-text {
-  color: #303133;
+  color: #e7e9f3;
   white-space: pre-wrap;
 }
 

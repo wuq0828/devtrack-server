@@ -54,6 +54,32 @@
         </div>
       </el-card>
 
+      <!-- Generated diagrams: flowchart + test-point mind map -->
+      <el-card v-if="hasGenerated && (flowchart || mindmap)" class="diagram-card" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <span class="result-title">流程图 & 测试点脑图</span>
+            <div class="diagram-actions">
+              <el-button text :icon="Picture" :loading="exporting" @click="exportActivePng">
+                导出 PNG
+              </el-button>
+              <el-button text :icon="CopyDocument" @click="copyActiveDiagram">复制源码</el-button>
+              <el-button text :icon="Download" @click="downloadActiveDiagram">下载 .mmd</el-button>
+            </div>
+          </div>
+        </template>
+        <el-tabs v-model="activeDiagram">
+          <el-tab-pane label="业务流程图" name="flowchart">
+            <MermaidDiagram v-if="flowchart" ref="flowchartRef" :code="flowchart" />
+            <el-empty v-else description="未生成流程图" :image-size="80" />
+          </el-tab-pane>
+          <el-tab-pane label="测试点脑图" name="mindmap">
+            <MermaidDiagram v-if="mindmap" ref="mindmapRef" :code="mindmap" />
+            <el-empty v-else description="未生成脑图" :image-size="80" />
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
+
       <!-- Generated cases -->
       <el-card v-if="hasGenerated" class="result-card" shadow="never">
         <template #header>
@@ -128,11 +154,15 @@ import {
   SwitchButton,
   MagicStick,
   DocumentAdd,
+  CopyDocument,
+  Download,
+  Picture,
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 import { genCases, saveCases } from '@/api/ai'
 import NotificationBell from '@/components/NotificationBell.vue'
 import AppNav from '@/components/AppNav.vue'
+import MermaidDiagram from '@/components/MermaidDiagram.vue'
 import type { AiEngine, GenCase } from '@/types'
 
 const PROJECT_ID = 1
@@ -147,6 +177,11 @@ const engine = ref<AiEngine | null>(null)
 const generatedCases = ref<GenCase[]>([])
 const hasGenerated = ref(false)
 
+// ---- Generated diagrams (Mermaid source) ----
+const flowchart = ref<string>('')
+const mindmap = ref<string>('')
+const activeDiagram = ref<'flowchart' | 'mindmap'>('flowchart')
+
 const engineLabel = computed(() =>
   engine.value === 'claude' ? 'claude · AI 模型' : 'heuristic · 启发式兜底',
 )
@@ -159,6 +194,9 @@ async function handleGenerate() {
     const result = await genCases({ projectId: PROJECT_ID, prd: text })
     engine.value = result.engine
     generatedCases.value = result.cases ?? []
+    flowchart.value = result.flowchart ?? ''
+    mindmap.value = result.mindmap ?? ''
+    activeDiagram.value = flowchart.value ? 'flowchart' : 'mindmap'
     hasGenerated.value = true
     // Default to selecting every generated case.
     await nextTick()
@@ -168,6 +206,56 @@ async function handleGenerate() {
   } finally {
     generating.value = false
   }
+}
+
+// ---- Diagram actions ----
+const flowchartRef = ref<InstanceType<typeof MermaidDiagram>>()
+const mindmapRef = ref<InstanceType<typeof MermaidDiagram>>()
+const exporting = ref(false)
+
+function currentDiagram(): { code: string; name: string } {
+  return activeDiagram.value === 'flowchart'
+    ? { code: flowchart.value, name: 'flowchart' }
+    : { code: mindmap.value, name: 'mindmap' }
+}
+
+async function exportActivePng() {
+  const { name } = currentDiagram()
+  const target = activeDiagram.value === 'flowchart' ? flowchartRef.value : mindmapRef.value
+  if (!target) return
+  exporting.value = true
+  try {
+    const ok = await target.exportPng(name)
+    if (ok) ElMessage.success('已导出 PNG')
+    else ElMessage.warning('当前没有可导出的图')
+  } catch {
+    ElMessage.error('导出失败')
+  } finally {
+    exporting.value = false
+  }
+}
+
+async function copyActiveDiagram() {
+  const { code } = currentDiagram()
+  if (!code) return
+  try {
+    await navigator.clipboard.writeText(code)
+    ElMessage.success('已复制 Mermaid 源码')
+  } catch {
+    ElMessage.warning('复制失败')
+  }
+}
+
+function downloadActiveDiagram() {
+  const { code, name } = currentDiagram()
+  if (!code) return
+  const blob = new Blob([code], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${name}.mmd`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 // ---- Selection ----
@@ -306,11 +394,21 @@ async function handleLogout() {
   align-items: center;
   gap: 10px;
   font-weight: 600;
-  color: #303133;
+  color: #e7e9f3;
 }
 
 .prd-card {
   margin-bottom: 16px;
+}
+
+.diagram-card {
+  margin-bottom: 16px;
+}
+
+.diagram-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .prd-actions {
@@ -321,7 +419,7 @@ async function handleLogout() {
 
 .cell-text {
   white-space: pre-wrap;
-  color: #303133;
+  color: #e7e9f3;
   font-size: 13px;
   line-height: 1.5;
 }

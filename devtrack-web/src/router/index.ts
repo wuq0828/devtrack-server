@@ -8,6 +8,12 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true },
   },
   {
+    path: '/feishu/callback',
+    name: 'feishu-callback',
+    component: () => import('@/views/FeishuCallbackView.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('@/views/DashboardView.vue'),

@@ -410,7 +410,7 @@ onMounted(fetchIterations)
 
 .topbar {
   height: 56px;
-  background: #409eff;
+  background: #818cf8;
   color: #fff;
   display: flex;
   align-items: center;
@@ -479,7 +479,7 @@ onMounted(fetchIterations)
 }
 
 .iteration-item {
-  border: 1px solid #ebeef5;
+  border: 1px solid rgba(130,140,200,0.18);
   border-radius: 8px;
   padding: 10px 12px;
   cursor: pointer;
@@ -488,12 +488,12 @@ onMounted(fetchIterations)
 
 .iteration-item:hover {
   border-color: #c6e2ff;
-  background: #f5f9ff;
+  background: rgba(99,102,241,0.08);
 }
 
 .iteration-item.active {
-  border-color: #409eff;
-  background: #ecf5ff;
+  border-color: #818cf8;
+  background: rgba(99,102,241,0.16);
 }
 
 .item-top {
@@ -505,7 +505,7 @@ onMounted(fetchIterations)
 
 .item-name {
   font-weight: 600;
-  color: #303133;
+  color: #e7e9f3;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -549,7 +549,7 @@ onMounted(fetchIterations)
 
 .report-title {
   font-weight: 600;
-  color: #303133;
+  color: #e7e9f3;
 }
 
 .report-body {
@@ -573,11 +573,11 @@ onMounted(fetchIterations)
   justify-content: space-between;
   margin-bottom: 8px;
   font-size: 13px;
-  color: #606266;
+  color: #9298b4;
 }
 
 .completion-label strong {
-  color: #409eff;
+  color: #818cf8;
 }
 
 .breakdown {
@@ -592,7 +592,7 @@ onMounted(fetchIterations)
   margin: 0 0 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #606266;
+  color: #9298b4;
 }
 
 .tag-list {

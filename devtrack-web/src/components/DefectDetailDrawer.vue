@@ -953,12 +953,12 @@ function handleClosed() {
   margin: 0 0 12px;
   font-size: 15px;
   font-weight: 600;
-  color: #303133;
+  color: #e7e9f3;
 }
 
 .header-section {
   padding-bottom: 16px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid rgba(130,140,200,0.18);
 }
 
 .defect-title {
@@ -972,13 +972,13 @@ function handleClosed() {
 .display-key {
   font-family: monospace;
   font-weight: 700;
-  color: #409eff;
+  color: #818cf8;
 }
 
 .title-text {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: #e7e9f3;
 }
 
 .tag-row {
@@ -1038,7 +1038,7 @@ function handleClosed() {
 
 .description {
   margin: 8px 0 0;
-  color: #606266;
+  color: #9298b4;
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -1052,7 +1052,7 @@ function handleClosed() {
 }
 
 .history-flow {
-  color: #606266;
+  color: #9298b4;
   font-size: 13px;
 }
 
@@ -1060,7 +1060,7 @@ function handleClosed() {
   margin-top: 4px;
   color: #909399;
   font-size: 13px;
-  background: #f5f7fa;
+  background: rgba(99,102,241,0.06);
   padding: 6px 10px;
   border-radius: 4px;
 }
@@ -1073,7 +1073,7 @@ function handleClosed() {
 
 .comment-item {
   padding: 10px 0;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid rgba(130,140,200,0.16);
 }
 
 .comment-head {
@@ -1089,7 +1089,7 @@ function handleClosed() {
 }
 
 .comment-content {
-  color: #303133;
+  color: #e7e9f3;
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -1138,7 +1138,7 @@ function handleClosed() {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 0;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid rgba(130,140,200,0.16);
 }
 
 .relation-main {
@@ -1150,7 +1150,7 @@ function handleClosed() {
 }
 
 .relation-title {
-  color: #303133;
+  color: #e7e9f3;
   font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1172,7 +1172,7 @@ function handleClosed() {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 0;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid rgba(130,140,200,0.16);
 }
 
 .attachment-main {
@@ -1188,7 +1188,7 @@ function handleClosed() {
 }
 
 .attachment-name {
-  color: #303133;
+  color: #e7e9f3;
   font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1208,7 +1208,7 @@ function handleClosed() {
 
 .activity-detail {
   margin-top: 4px;
-  color: #606266;
+  color: #9298b4;
   font-size: 13px;
 }
 </style>

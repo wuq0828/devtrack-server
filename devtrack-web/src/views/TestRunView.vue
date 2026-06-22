@@ -37,7 +37,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { User, ArrowDown, SwitchButton } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 import NotificationBell from '@/components/NotificationBell.vue'

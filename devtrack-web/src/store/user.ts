@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login as loginApi } from '@/api/auth'
+import { login as loginApi, feishuLogin as feishuLoginApi } from '@/api/auth'
 import type { LoginRequest, LoginResult } from '@/types'
 
 const TOKEN_KEY = 'devtrack_token'
@@ -53,9 +53,15 @@ export const useUserStore = defineStore('user', () => {
     return result
   }
 
+  async function loginByFeishu(code: string) {
+    const result = await feishuLoginApi(code)
+    setSession(result)
+    return result
+  }
+
   function logout() {
     clearSession()
   }
 
-  return { token, user, isLoggedIn, username, login, logout, clearSession }
+  return { token, user, isLoggedIn, username, login, loginByFeishu, logout, clearSession }
 })

@@ -1,3 +1,58 @@
+/* ============================================================
+   DevTrack — Dark Glassmorphism Theme
+   Base layer: Element-Plus dark css-vars (imported in main.ts)
+   This file overlays a deep-space background, neon-indigo accent,
+   frosted-glass surfaces and glowing edges on top of it.
+   ============================================================ */
+
+:root,
+html.dark {
+  /* ---- Brand accent: neon indigo ---- */
+  --dt-accent: #6366f1;
+  --dt-accent-soft: #818cf8;
+  --dt-accent-glow: rgba(99, 102, 241, 0.45);
+  --dt-cyan: #22d3ee;
+  --dt-violet: #a855f7;
+
+  /* ---- Surfaces ---- */
+  --dt-bg: #0b0f1a;
+  --dt-glass-bg: rgba(22, 28, 46, 0.55);
+  --dt-glass-bg-strong: rgba(26, 33, 54, 0.78);
+  --dt-glass-border: rgba(130, 140, 200, 0.18);
+  --dt-glass-border-strong: rgba(130, 140, 200, 0.32);
+  --dt-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --dt-radius: 14px;
+}
+
+/* ---- Element-Plus variable overrides (dark theme) ---- */
+html.dark {
+  --el-color-primary: var(--dt-accent);
+  --el-color-primary-light-3: #4f46e5;
+  --el-color-primary-light-5: #4338ca;
+  --el-color-primary-light-7: #3730a3;
+  --el-color-primary-light-8: #312e81;
+  --el-color-primary-light-9: rgba(99, 102, 241, 0.16);
+  --el-color-primary-dark-2: var(--dt-accent-soft);
+
+  --el-bg-color: var(--dt-glass-bg-strong);
+  --el-bg-color-overlay: #161c2e;
+  --el-bg-color-page: var(--dt-bg);
+
+  --el-text-color-primary: #e7e9f3;
+  --el-text-color-regular: #c2c6da;
+  --el-text-color-secondary: #9298b4;
+  --el-text-color-placeholder: #6b7194;
+
+  --el-border-color: var(--dt-glass-border);
+  --el-border-color-light: var(--dt-glass-border);
+  --el-border-color-lighter: rgba(130, 140, 200, 0.12);
+  --el-border-color-extra-light: rgba(130, 140, 200, 0.08);
+  --el-fill-color-blank: var(--dt-glass-bg-strong);
+
+  --el-border-radius-base: 10px;
+  --el-box-shadow-light: var(--dt-shadow);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -13,6 +68,159 @@ body,
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
     Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  background-color: #f5f7fa;
-  color: #303133;
+  color: #e7e9f3;
+  /* Deep-space base with soft nebula glows in the corners. */
+  background-color: var(--dt-bg);
+  background-image:
+    radial-gradient(900px 600px at 12% -8%, rgba(99, 102, 241, 0.18), transparent 60%),
+    radial-gradient(800px 600px at 100% 0%, rgba(168, 85, 247, 0.14), transparent 55%),
+    radial-gradient(700px 700px at 85% 110%, rgba(34, 211, 238, 0.10), transparent 60%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   Topbar — every view renders <header class="topbar"> with a
+   hardcoded solid-blue background in its scoped styles. Override
+   it globally to a frosted glass bar with a glowing underline.
+   `!important` is required to beat the scoped [data-v-*] rule.
+   ============================================================ */
+.topbar {
+  background: rgba(13, 18, 33, 0.72) !important;
+  color: #e7e9f3 !important;
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--dt-glass-border-strong) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 1px 0 var(--dt-accent-glow) !important;
+}
+
+/* Logo wordmark — gradient neon text. */
+.topbar .logo,
+.logo {
+  background: linear-gradient(92deg, var(--dt-accent-soft), var(--dt-cyan) 55%, var(--dt-violet));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: 0 0 22px var(--dt-accent-glow);
+}
+
+.topbar .user-info {
+  color: #c2c6da !important;
+  transition: color 0.2s ease;
+}
+.topbar .user-info:hover {
+  color: #fff !important;
+}
+
+/* ============================================================
+   Glass cards — Element-Plus el-card across all views.
+   ============================================================ */
+html.dark .el-card {
+  background: var(--dt-glass-bg) !important;
+  border: 1px solid var(--dt-glass-border) !important;
+  border-radius: var(--dt-radius) !important;
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  box-shadow: var(--dt-shadow);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+html.dark .el-card:hover {
+  border-color: var(--dt-glass-border-strong) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--dt-accent-glow);
+  transform: translateY(-2px);
+}
+html.dark .el-card__header {
+  border-bottom: 1px solid var(--dt-glass-border) !important;
+}
+
+/* Tables — transparent so the glass shows through. */
+html.dark .el-table,
+html.dark .el-table tr,
+html.dark .el-table th.el-table__cell,
+html.dark .el-table td.el-table__cell {
+  background-color: transparent !important;
+}
+html.dark .el-table th.el-table__cell {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+}
+html.dark .el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
+  background-color: rgba(99, 102, 241, 0.12) !important;
+}
+html.dark .el-table__inner-wrapper::before,
+html.dark .el-table .el-table__cell {
+  border-color: var(--dt-glass-border) !important;
+}
+
+/* Buttons — primary gets a gradient + glow. */
+html.dark .el-button--primary {
+  background: linear-gradient(135deg, var(--dt-accent), #4f46e5) !important;
+  border: none !important;
+  box-shadow: 0 4px 16px var(--dt-accent-glow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+html.dark .el-button--primary:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 6px 22px var(--dt-accent-glow);
+  transform: translateY(-1px);
+}
+
+/* Inputs / selects — subtle inset glass. */
+html.dark .el-input__wrapper,
+html.dark .el-textarea__inner {
+  background-color: rgba(15, 20, 36, 0.6) !important;
+  box-shadow: 0 0 0 1px var(--dt-glass-border) inset !important;
+}
+html.dark .el-input__wrapper.is-focus,
+html.dark .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--dt-accent) inset !important;
+}
+
+/* Dialogs / drawers / popovers / dropdowns — solid glass so content is legible. */
+html.dark .el-dialog,
+html.dark .el-drawer,
+html.dark .el-message-box,
+html.dark .el-popper,
+html.dark .el-dropdown-menu {
+  background: var(--dt-glass-bg-strong) !important;
+  backdrop-filter: saturate(150%) blur(18px);
+  -webkit-backdrop-filter: saturate(150%) blur(18px);
+  border: 1px solid var(--dt-glass-border-strong) !important;
+  border-radius: var(--dt-radius) !important;
+  box-shadow: var(--dt-shadow) !important;
+}
+
+/* Tags — slightly glassy. */
+html.dark .el-tag {
+  backdrop-filter: blur(4px);
+}
+
+/* ---- Custom scrollbar to match the dark glass aesthetic ---- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.5) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.7);
+  background-clip: content-box;
+}
+
+/* Text-selection accent. */
+::selection {
+  background: rgba(99, 102, 241, 0.35);
+  color: #fff;
 }

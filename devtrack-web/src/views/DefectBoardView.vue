@@ -176,7 +176,7 @@ onMounted(loadBoard)
 
 .topbar {
   height: 56px;
-  background: #409eff;
+  background: #818cf8;
   color: #fff;
   display: flex;
   align-items: center;
@@ -247,7 +247,7 @@ onMounted(loadBoard)
 
 .board-column {
   flex: 0 0 280px;
-  background: #f4f5f7;
+  background: rgba(22,28,46,0.5);
   border-radius: 8px;
   padding: 10px;
   max-height: calc(100vh - 220px);
@@ -265,8 +265,8 @@ onMounted(loadBoard)
 
 .column-count {
   font-weight: 700;
-  color: #909399;
-  background: #fff;
+  color: #c2c6da;
+  background: rgba(99, 102, 241, 0.18);
   border-radius: 10px;
   padding: 0 8px;
   font-size: 12px;
@@ -292,14 +292,14 @@ onMounted(loadBoard)
 .card-key {
   font-family: monospace;
   font-size: 12px;
-  color: #409eff;
+  color: #818cf8;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .card-title {
   font-size: 13px;
-  color: #303133;
+  color: #e7e9f3;
   line-height: 1.5;
   margin-bottom: 8px;
 }

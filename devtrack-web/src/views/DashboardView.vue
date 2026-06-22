@@ -231,7 +231,7 @@ const statusPieOption = computed<EChartsOption>(() => ({
       radius: ['40%', '68%'],
       center: ['50%', '45%'],
       avoidLabelOverlap: true,
-      itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+      itemStyle: { borderRadius: 6, borderColor: '#0b0f1a', borderWidth: 2 },
       label: { formatter: '{b}\n{c}' },
       data: statusEntries.value.map(([key, value]) => ({
         name: statusLabel(key),
@@ -254,7 +254,7 @@ const priorityBarOption = computed<EChartsOption>(() => ({
       name: '数量',
       type: 'bar',
       barWidth: '46%',
-      itemStyle: { color: '#409eff', borderRadius: [4, 4, 0, 0] },
+      itemStyle: { color: '#818cf8', borderRadius: [4, 4, 0, 0] },
       data: priorityEntries.value.map(([, value]) => value),
     },
   ],
@@ -317,7 +317,7 @@ onMounted(() => {
 
 .topbar {
   height: 56px;
-  background: #409eff;
+  background: #818cf8;
   color: #fff;
   display: flex;
   align-items: center;
@@ -370,7 +370,7 @@ onMounted(() => {
 
 .card-title {
   font-weight: 600;
-  color: #303133;
+  color: #e7e9f3;
 }
 
 .sla-card {
@@ -386,7 +386,7 @@ onMounted(() => {
 .display-key {
   font-family: monospace;
   font-weight: 700;
-  color: #409eff;
+  color: #818cf8;
 }
 
 .overdue-days {
@@ -436,7 +436,7 @@ onMounted(() => {
 
 .activity-detail {
   margin-top: 4px;
-  color: #606266;
+  color: #9298b4;
   font-size: 13px;
 }
 
