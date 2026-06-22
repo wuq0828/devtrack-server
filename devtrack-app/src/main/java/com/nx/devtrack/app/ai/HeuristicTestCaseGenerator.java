@@ -16,8 +16,10 @@ import java.util.Set;
 @Component
 public class HeuristicTestCaseGenerator implements TestCaseGenerator {
 
-    private static final int MAX_CASES = 16;
-    private static final int MAX_SCENARIOS = 8;
+    private static final int MAX_CASES = 80;
+    private static final int MAX_SCENARIOS = 40;
+    /** 流程图/脑图只取前若干场景,避免节点过多导致 Mermaid 布局重叠糊成一团(用例数不受此限)。 */
+    private static final int MAX_DIAGRAM_SCENARIOS = 8;
 
     @Override
     public boolean available() {
@@ -33,8 +35,12 @@ public class HeuristicTestCaseGenerator implements TestCaseGenerator {
     public GenArtifacts generate(String prd) {
         List<String> scenarios = splitScenarios(prd);
         List<GenCaseDto> cases = buildCases(scenarios);
-        String flowchart = buildFlowchart(scenarios);
-        String mindmap = buildMindmap(scenarios);
+        // Cap the diagrams to a readable subset so a large PRD doesn't overload Mermaid.
+        List<String> diagramScenarios = scenarios.size() > MAX_DIAGRAM_SCENARIOS
+                ? scenarios.subList(0, MAX_DIAGRAM_SCENARIOS)
+                : scenarios;
+        String flowchart = buildFlowchart(diagramScenarios);
+        String mindmap = buildMindmap(diagramScenarios);
         return new GenArtifacts(cases, flowchart, mindmap);
     }
 
