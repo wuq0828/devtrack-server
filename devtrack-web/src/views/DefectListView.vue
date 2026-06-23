@@ -116,6 +116,7 @@
           ref="tableRef"
           v-loading="loading"
           :data="rows"
+          :row-class-name="rowClassName"
           stripe
           border
           style="width: 100%"
@@ -555,6 +556,11 @@ function userName(id: number | null | undefined): string {
   if (id == null) return '—'
   return userMap.value[id] ?? '—'
 }
+
+/** 已关闭的缺陷整行淡化,便于忽略、与未关闭区分。 */
+function rowClassName({ row }: { row: DefectDto }): string {
+  return row.statusCode === 'CLOSED' ? 'closed-row' : ''
+}
 async function fetchUsers() {
   try {
     users.value = await listUsers()
@@ -575,6 +581,15 @@ onMounted(() => {
   min-height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+/* 已关闭缺陷:整行淡化,弱化存在感;悬停时恢复一些以便查看。 */
+.table-card :deep(.el-table__row.closed-row) {
+  opacity: 0.42;
+  transition: opacity 0.2s ease;
+}
+.table-card :deep(.el-table__row.closed-row:hover) {
+  opacity: 0.78;
 }
 
 
