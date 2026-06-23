@@ -27,6 +27,14 @@ devtrack:
     # 复用团队现成的自定义机器人 Webhook;留空则只打日志不真正发送
     webhook-url: ""
     defect-url-base: "http://localhost:5173/defect/"
+    # 飞书企业应用凭证。app-id 为公开标识可入库;app-secret/encrypt-key 为敏感信息,
+    # 走环境变量注入,切勿硬编码提交。
+    app-id: "cli_aab34ced6dba5bdb"
+    app-secret: "${FEISHU_APP_SECRET:}"
+    encrypt-key: "${FEISHU_ENCRYPT_KEY:}"
+    # 用 127.0.0.1 而非 localhost:本机 localhost 会解析到 IPv6(::1),与同端口的
+    # 另一个项目串台;127.0.0.1 锁定 IPv4,确保回调命中 DevTrack 前端。
+    redirect-uri: "http://127.0.0.1:5173/feishu/callback"
   integration:
     # pytest/CI 上报用的 API Token(演示用),生产改查 intg_api_token 表
     api-token: "dvt_live_demo_token"
