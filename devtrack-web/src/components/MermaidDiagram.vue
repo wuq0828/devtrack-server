@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Loading, WarningFilled } from '@element-plus/icons-vue'
 
 const props = defineProps<{
@@ -85,7 +85,10 @@ async function render() {
     if (!ok) throw new Error('parse failed')
     const svg = await renderToSvg(mermaid, code)
     await nextTick()
-    if (host.value) host.value.innerHTML = svg
+    if (host.value) {
+      host.value.innerHTML = svg
+      centerMindmapLabels(host.value)
+    }
   } catch {
     error.value = true
   } finally {
@@ -108,7 +111,7 @@ async function renderToSvg(
     document.getElementById(id)?.remove()
     document.getElementById(`d${id}`)?.remove()
     const { svg } = await mermaid.render(id, code)
-    return centerMindmapLabels(svg)
+    return svg
   }
   try {
     return await attempt()
@@ -119,46 +122,51 @@ async function renderToSvg(
 }
 
 /**
- * Mermaid mind-map mis-positions node labels (text sits right of the box).
- * Force every mind-map node's label to the centre of its box rect.
- * Handles both renderings: SVG <text>/<tspan> (mermaid 11.x in-browser) and
- * <foreignObject> (some builds). DOM-based, robust to version/format.
+ * Mermaid mind-map mis-positions node labels (text sits right of / below the
+ * box, and multi-line labels overlap). Measure each label's real bounding box
+ * (getBBox) and translate the whole <text> so its centre matches the box rect's
+ * centre — without touching internal line layout. Idempotent (transform is set,
+ * not accumulated), so it's safe to re-run when the diagram becomes visible.
  */
-function centerMindmapLabels(svg: string): string {
-  try {
-    const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
-    const root = doc.documentElement
-    if (root.querySelector('parsererror')) return svg
-
-    root.querySelectorAll('g[class*="mindmap-node"]').forEach((g) => {
-      const rect = Array.from(g.querySelectorAll('rect')).find(
-        (r) => parseFloat(r.getAttribute('width') || '0') > 0,
-      )
-      if (!rect) return
-      const cx =
-        parseFloat(rect.getAttribute('x') || '0') +
-        parseFloat(rect.getAttribute('width') || '0') / 2
-
-      // SVG text label
-      const text = g.querySelector('text')
-      if (text) {
-        text.setAttribute('text-anchor', 'middle')
-        text.setAttribute('x', String(cx))
-        text.querySelectorAll('tspan').forEach((ts) => ts.setAttribute('x', String(cx)))
-      }
-      // foreignObject label (other mermaid builds)
-      g.querySelectorAll('foreignObject').forEach((fo) => {
-        const w = parseFloat(fo.getAttribute('width') || '0')
-        const h = parseFloat(fo.getAttribute('height') || '0')
-        if (w > 0) fo.setAttribute('x', String(cx - w / 2))
-        if (h > 0) fo.setAttribute('y', String(-h / 2))
-      })
-    })
-    return new XMLSerializer().serializeToString(root)
-  } catch {
-    return svg
-  }
+function centerMindmapLabels(hostEl: HTMLElement): void {
+  hostEl.querySelectorAll<SVGGElement>('g[class*="mindmap-node"]').forEach((g) => {
+    const rect = Array.from(g.querySelectorAll<SVGRectElement>('rect')).find(
+      (r) => r.width.baseVal.value > 0,
+    )
+    const text = g.querySelector<SVGTextElement>('text')
+    if (!rect || !text) return
+    let bb: DOMRect
+    try {
+      bb = text.getBBox()
+    } catch {
+      return
+    }
+    // Hidden (e.g. inactive tab) → getBBox is empty; the ResizeObserver re-runs
+    // this once the diagram becomes visible.
+    if (bb.width === 0 && bb.height === 0) return
+    // Horizontal only: mermaid already vertically centres labels; a getBBox-based
+    // vertical shift over-corrects (the glyph box includes descender space).
+    const boxCx = rect.x.baseVal.value + rect.width.baseVal.value / 2
+    const dx = boxCx - (bb.x + bb.width / 2)
+    text.setAttribute('transform', `translate(${dx.toFixed(2)},0)`)
+  })
 }
+
+// Re-centre labels when the diagram resizes or transitions hidden → visible
+// (mind-map often lives in an inactive tab where getBBox is 0 at first render).
+let resizeObserver: ResizeObserver | null = null
+onMounted(() => {
+  if (typeof ResizeObserver !== 'undefined' && host.value) {
+    resizeObserver = new ResizeObserver(() => {
+      if (host.value) centerMindmapLabels(host.value)
+    })
+    resizeObserver.observe(host.value)
+  }
+})
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+})
 
 watch(() => props.code, render, { immediate: true })
 

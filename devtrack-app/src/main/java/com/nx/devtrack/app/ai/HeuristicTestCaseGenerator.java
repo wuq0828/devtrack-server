@@ -235,9 +235,13 @@ public class HeuristicTestCaseGenerator implements TestCaseGenerator {
             return null;
         }
 
-        // 根节点固定用简短标签:mermaid 根节点对长文字(尤其中英混排)定位不准、易偏移/溢出,
-        // 短标签能稳定居中;文档内容已由各模块体现,无需把长标题塞进根节点。
-        String rootLabel = "测试点";
+        // 根节点用 PRD 文档标题(# 一级标题);去掉末尾版本号残留,空则兜底「测试点」。
+        String rootLabel = heads.stream().filter(h -> h.level() == 1)
+                .map(Heading::text).findFirst().orElse("测试点")
+                .replaceAll("(?i)\\s+v[\\d ]*$", "").trim();
+        if (rootLabel.isEmpty()) {
+            rootLabel = "测试点";
+        }
 
         // 第一遍:把标题分组为「## 模块 -> 其下功能点」(过滤元信息章节,限制数量)。
         List<MmModule> mods = new ArrayList<>();
