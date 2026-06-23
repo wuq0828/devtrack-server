@@ -156,7 +156,9 @@
                 <el-button
                   type="primary"
                   size="small"
-                  link
+                  plain
+                  :icon="View"
+                  class="detail-btn"
                   @click="openDetail((row as DefectDto).id)"
                 >
                   详情
@@ -166,7 +168,9 @@
                   :key="action.code"
                   :type="action.type"
                   size="small"
-                  link
+                  :link="action.type !== 'primary'"
+                  :plain="action.type === 'primary'"
+                  :class="{ 'detail-btn': action.type === 'primary' }"
                   @click="handleTransition(row as DefectDto, action)"
                 >
                   {{ action.label }}
@@ -264,6 +268,7 @@ import {
   Search,
   RefreshLeft,
   Plus,
+  View,
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 import {
@@ -525,6 +530,7 @@ onMounted(fetchList)
   display: flex;
   flex-direction: column;
 }
+
 
 .topbar {
   height: 56px;

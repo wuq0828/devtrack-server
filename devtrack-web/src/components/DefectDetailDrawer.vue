@@ -52,7 +52,7 @@
               @show="handleTagPopoverShow"
             >
               <template #reference>
-                <el-button size="small" type="primary" plain :icon="Plus" round>
+                <el-button size="small" type="primary" plain :icon="Plus" round class="detail-btn">
                   标签
                 </el-button>
               </template>

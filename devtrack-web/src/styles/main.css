@@ -224,3 +224,116 @@ html.dark .el-tag {
   background: rgba(99, 102, 241, 0.35);
   color: #fff;
 }
+
+/* ============================================================
+   Polish layer — additive refinements on the glass theme.
+   ============================================================ */
+
+/* ---- Tables: sticky glass header + zebra (when `stripe` is set) ---- */
+html.dark .el-table th.el-table__cell {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  backdrop-filter: saturate(140%) blur(8px);
+}
+html.dark .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background-color: rgba(130, 140, 200, 0.05) !important;
+}
+
+/* ---- Micro-interactions ---- */
+/* Secondary / default buttons: accent glow border on hover. */
+html.dark .el-button {
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease,
+    color 0.16s ease;
+}
+html.dark .el-button:not(.el-button--primary):hover {
+  border-color: var(--dt-accent) !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 1px var(--dt-accent-glow);
+}
+html.dark .el-button:active {
+  transform: translateY(1px);
+}
+
+/* Tags lift on hover. */
+html.dark .el-tag {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+html.dark .el-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Pagination active page glows. */
+html.dark .el-pagination.is-background .el-pager li.is-active {
+  background: linear-gradient(135deg, var(--dt-accent), #4f46e5) !important;
+  box-shadow: 0 2px 10px var(--dt-accent-glow);
+}
+
+/* Horizontal nav: soft accent pill on hover. */
+html.dark .el-menu--horizontal > .el-menu-item:not(.is-disabled):hover,
+html.dark .el-menu--horizontal > .el-sub-menu:hover .el-sub-menu__title {
+  background-color: rgba(99, 102, 241, 0.14) !important;
+  border-radius: 8px;
+}
+
+/* ---- Empty state ---- */
+html.dark .el-empty {
+  padding: 44px 0;
+}
+html.dark .el-empty__description p {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+html.dark .el-empty__image svg,
+html.dark .el-empty__image img {
+  opacity: 0.6;
+  filter: drop-shadow(0 0 14px rgba(99, 102, 241, 0.28));
+}
+
+/* ---- Loading & skeleton ---- */
+html.dark .el-loading-mask {
+  background-color: rgba(11, 15, 26, 0.55) !important;
+  backdrop-filter: blur(2px);
+}
+html.dark .el-loading-spinner .circular {
+  filter: drop-shadow(0 0 8px var(--dt-accent-glow));
+}
+html.dark .el-skeleton__item {
+  background: linear-gradient(
+    90deg,
+    rgba(130, 140, 200, 0.08) 25%,
+    rgba(130, 140, 200, 0.18) 37%,
+    rgba(130, 140, 200, 0.08) 63%
+  ) !important;
+  background-size: 400% 100% !important;
+}
+
+/* ---- Shared "action chip": 详情 / primary 流转 / 标签 等主操作按钮 ---- */
+html.dark .el-button.detail-btn {
+  font-weight: 600;
+  color: #a5b4fc !important;
+  background: rgba(99, 102, 241, 0.16) !important;
+  border-color: rgba(99, 102, 241, 0.55) !important;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+html.dark .el-button.detail-btn:hover {
+  color: #fff !important;
+  background: rgba(99, 102, 241, 0.3) !important;
+  border-color: var(--dt-accent, #6366f1) !important;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.45);
+}
+
+/* ---- Page transition (router-view) ---- */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
