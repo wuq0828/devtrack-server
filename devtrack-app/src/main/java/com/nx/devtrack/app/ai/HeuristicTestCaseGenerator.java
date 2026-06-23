@@ -94,13 +94,13 @@ public class HeuristicTestCaseGenerator implements TestCaseGenerator {
         return null;
     }
 
-    /** 把 PRD 切成去重后的场景短语(最多 MAX_SCENARIOS 个)。 */
+    /** 把 PRD 切成去重后的场景短语(最多 MAX_SCENARIOS 个),过滤 Markdown 表格/标签等噪音。 */
     private List<String> splitScenarios(String prd) {
         Set<String> scenarios = new LinkedHashSet<>();
         if (prd != null) {
             for (String raw : prd.split("[\\n。;；]")) {
-                String line = raw.trim();
-                if (line.length() < 4) {
+                String line = cleanScenarioLine(raw);
+                if (line.length() < 4 || isNoiseLine(line)) {
                     continue;
                 }
                 scenarios.add(line.length() > 40 ? line.substring(0, 40) : line);
@@ -110,6 +110,49 @@ public class HeuristicTestCaseGenerator implements TestCaseGenerator {
             }
         }
         return new ArrayList<>(scenarios);
+    }
+
+    /** 清理行首的 Markdown 标记(#、>、-、*、|、编号等)并把表格竖线压成空格。 */
+    private String cleanScenarioLine(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String line = raw.trim()
+                // 行首:标题/引用/列表/表格符号 + 编号
+                .replaceAll("^[#>*+\\-|\\s]+", "")
+                .replaceAll("^\\d+[.、)]\\s*", "")
+                // 去掉 Markdown 转义反斜杠、反引号、加粗星号
+                .replaceAll("\\\\(?=[_*`#\\[\\]()~])", "")
+                .replace("`", "")
+                .replace("**", "")
+                // 表格竖线 -> 空格
+                .replaceAll("\\s*\\|\\s*", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        return line;
+    }
+
+    /** 判断是否为 Markdown 表格分隔行 / HTML 标签 / 代码 / 图表语法 等噪音行。 */
+    private boolean isNoiseLine(String line) {
+        // 仅由表格/符号字符组成(如 --- :-- 分隔行)
+        if (line.matches("[\\s|:\\-*=_~`#>]+")) {
+            return true;
+        }
+        // HTML/飞书标签、图片、代码围栏
+        if (line.startsWith("<") || line.startsWith("![") || line.startsWith("```")) {
+            return true;
+        }
+        // Mermaid 图表语法
+        if (line.contains("-->") || line.matches("(?i)(flowchart|graph|mindmap|subgraph|classDef|class)\\b.*")) {
+            return true;
+        }
+        // 不含任何中文/英文字母(纯符号或纯数字)
+        if (!line.matches(".*[\\u4e00-\\u9fa5A-Za-z].*")) {
+            return true;
+        }
+        // 一半以上是表格/分隔符号
+        long sym = line.chars().filter(c -> c == '|' || c == '-' || c == ':' || c == '=').count();
+        return sym * 2 > line.length();
     }
 
     private List<GenCaseDto> buildCases(List<String> scenarios) {
