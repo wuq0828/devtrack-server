@@ -198,8 +198,34 @@ export const STATUS_TRANSITIONS: Record<StatusCode, TransitionAction[]> = {
   CLOSED: [],
 }
 
-export function getTransitions(status: StatusCode): TransitionAction[] {
-  return STATUS_TRANSITIONS[status] ?? []
+/** 处理人侧动作:确认/开始处理/解决/拒绝。 */
+const ASSIGNEE_ACTION_CODES = new Set<TransitionCode>(['confirm', 'start', 'resolve', 'reject'])
+/** 创建人侧动作:验证通过/重新打开/关闭。 */
+const REPORTER_ACTION_CODES = new Set<TransitionCode>(['verify', 'reopen', 'close'])
+
+export interface TransitionActorCtx {
+  assigneeId: number | null
+  reporterId: number | null
+  currentUserId: number | null
+}
+
+/**
+ * 当前状态可用的流转动作。传入 ctx 时按「关系角色」过滤:
+ * 处理人才能 确认/开始处理/解决/拒绝;创建人才能 验证/重新打开/关闭。
+ * 未指派处理人时,处理人侧动作不受限(避免缺陷卡死)。
+ */
+export function getTransitions(status: StatusCode, ctx?: TransitionActorCtx): TransitionAction[] {
+  const all = STATUS_TRANSITIONS[status] ?? []
+  if (!ctx) return all
+  return all.filter((action) => {
+    if (ASSIGNEE_ACTION_CODES.has(action.code)) {
+      return ctx.assigneeId == null || ctx.currentUserId === ctx.assigneeId
+    }
+    if (REPORTER_ACTION_CODES.has(action.code)) {
+      return ctx.currentUserId === ctx.reporterId
+    }
+    return true
+  })
 }
 
 // Button visual type keyed by transition code. Used when the backend returns

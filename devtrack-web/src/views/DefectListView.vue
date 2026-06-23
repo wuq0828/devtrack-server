@@ -145,6 +145,16 @@
               </el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="处理人" width="110" align="center">
+            <template #default="{ row }">
+              {{ userName((row as DefectDto).assigneeId) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="创建人" width="110" align="center">
+            <template #default="{ row }">
+              {{ userName((row as DefectDto).reporterId) }}
+            </template>
+          </el-table-column>
           <el-table-column label="创建时间" width="170" align="center">
             <template #default="{ row }">
               {{ formatTime((row as DefectDto).createTime) }}
@@ -164,7 +174,11 @@
                   详情
                 </el-button>
                 <el-button
-                  v-for="action in getTransitions((row as DefectDto).statusCode)"
+                  v-for="action in getTransitions((row as DefectDto).statusCode, {
+                    assigneeId: (row as DefectDto).assigneeId,
+                    reporterId: (row as DefectDto).reporterId,
+                    currentUserId: userStore.user?.userId ?? null,
+                  })"
                   :key="action.code"
                   :type="action.type"
                   size="small"
@@ -235,6 +249,17 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="处理人" prop="assigneeId">
+          <el-select
+            v-model="createForm.assigneeId"
+            placeholder="指派给处理人(选填)"
+            clearable
+            filterable
+            style="width: 100%"
+          >
+            <el-option v-for="u in users" :key="u.userId" :label="u.name" :value="u.userId" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="createVisible = false">取消</el-button>
@@ -277,6 +302,7 @@ import {
   transitionDefect,
   batchTransitionDefects,
 } from '@/api/defect'
+import { listUsers, type UserBrief } from '@/api/user'
 import type {
   DefectDto,
   DefectCreateRequest,
@@ -467,6 +493,7 @@ function defaultCreateForm(): DefectCreateRequest {
     description: '',
     severity: 'MAJOR' as Severity,
     priority: 'P2' as Priority,
+    assigneeId: undefined,
   }
 }
 
@@ -521,7 +548,26 @@ async function handleLogout() {
   router.replace('/login')
 }
 
-onMounted(fetchList)
+// ---- Users: assignee dropdown + id→name display ----
+const users = ref<UserBrief[]>([])
+const userMap = ref<Record<number, string>>({})
+function userName(id: number | null | undefined): string {
+  if (id == null) return '—'
+  return userMap.value[id] ?? '—'
+}
+async function fetchUsers() {
+  try {
+    users.value = await listUsers()
+    userMap.value = Object.fromEntries(users.value.map((u) => [u.userId, u.name]))
+  } catch {
+    // non-fatal — columns/dropdown just show placeholders
+  }
+}
+
+onMounted(() => {
+  fetchList()
+  fetchUsers()
+})
 </script>
 
 <style scoped>

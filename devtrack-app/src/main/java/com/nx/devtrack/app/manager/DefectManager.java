@@ -126,11 +126,17 @@ public class DefectManager {
         }
         // 流转限定角色(如 verify 限 QA):wf_transition.require_role 此处真正生效
         permissionManager.checkRole(operatorId, rule.getRequireRole(), defect.getProjectId());
+        // 关系角色:处理人才能 确认/开始处理/解决/拒绝;创建人才能 验证/重新打开/关闭
+        checkRelationActor(defect, transitionCode, operatorId);
 
         String from = defect.getStatusCode();
         long durationSec = secondsSinceEnteredCurrentState(defect);
         defect.setStatusCode(rule.getToState());
         applyStateSideEffects(defect, rule.getToState());
+        // 处理人「解决」后,自动把缺陷流转给创建人(处理人改为创建人,由创建人验证)
+        if ("resolve".equals(transitionCode) && defect.getReporterId() != null) {
+            defect.setAssigneeId(defect.getReporterId());
+        }
         defectDao.save(defect);
 
         writeHistory(defect.getId(), from, rule.getToState(), rule.getCode(), durationSec, comment, operatorId);
@@ -139,6 +145,35 @@ public class DefectManager {
         log.info("defect#{} {} -> {} by {}", defectId, from, rule.getToState(), operatorId);
         feishuNotifyManager.notifyDefectChanged(defect, rule.getName(), userNameResolver.name(operatorId));
         return defect;
+    }
+
+    /** 处理人侧动作:确认/开始处理/解决/拒绝。 */
+    private static final Set<String> ASSIGNEE_ACTIONS = Set.of("confirm", "start", "resolve", "reject");
+    /** 创建人侧动作:验证通过/重新打开/关闭。 */
+    private static final Set<String> REPORTER_ACTIONS = Set.of("verify", "reopen", "close");
+
+    /**
+     * 当前用户能否执行该流转动作(关系角色):
+     * 处理人才能 确认/开始处理/解决/拒绝;创建人才能 验证/重新打开/关闭。
+     * 未指派处理人(assigneeId 为空)时,处理人侧动作不受限,避免缺陷卡死。
+     */
+    private boolean canActor(Defect defect, String code, Long operatorId) {
+        if (ASSIGNEE_ACTIONS.contains(code)) {
+            Long assignee = defect.getAssigneeId();
+            return assignee == null || assignee.equals(operatorId);
+        }
+        if (REPORTER_ACTIONS.contains(code)) {
+            return operatorId.equals(defect.getReporterId());
+        }
+        return true;
+    }
+
+    /** 关系角色校验,不满足则抛权限错误。 */
+    private void checkRelationActor(Defect defect, String code, Long operatorId) {
+        if (!canActor(defect, code, operatorId)) {
+            String msg = ASSIGNEE_ACTIONS.contains(code) ? "仅处理人可执行该操作" : "仅创建人可执行该操作";
+            throw new BizException(Errors.NO_PERMISSION.getCode(), msg);
+        }
     }
 
     @Transactional
@@ -244,14 +279,15 @@ public class DefectManager {
         dto.setDefect(toDto(defect));
         dto.setHistory(history);
         dto.setComments(commentManager.listComments(defectId));
-        dto.setAvailableTransitions(availableTransitions(defect));
+        dto.setAvailableTransitions(availableTransitions(defect, userId));
         return dto;
     }
 
-    /** 当前缺陷在当前状态下可执行的流转(精确态 + 通配态) */
-    public List<AvailableTransitionDto> availableTransitions(Defect defect) {
+    /** 当前缺陷在当前状态下、当前用户可执行的流转(精确态 + 通配态,再按关系角色过滤) */
+    public List<AvailableTransitionDto> availableTransitions(Defect defect, Long userId) {
         return wfTransitionDao.findByWorkflowId(defect.getWorkflowId()).stream()
                 .filter(t -> defect.getStatusCode().equals(t.getFromState()) || WILDCARD_STATE.equals(t.getFromState()))
+                .filter(t -> canActor(defect, t.getCode(), userId))
                 .map(t -> {
                     AvailableTransitionDto a = new AvailableTransitionDto();
                     a.setCode(t.getCode());
