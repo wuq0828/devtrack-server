@@ -3,7 +3,9 @@ package com.nx.devtrack.app.ai;
 import com.nx.devtrack.common.dto.GenCaseDto;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +39,33 @@ public class HeuristicTestCaseGenerator implements TestCaseGenerator {
     private static final Pattern EMBEDDED_FLOWCHART = Pattern.compile(
             "```[a-zA-Z]*\\s*\\R(\\s*(?:flowchart|graph)\\b[\\s\\S]*?)```");
 
+    /** PRD 中内嵌的 Mermaid 脑图代码块(```...mindmap...```)。 */
+    private static final Pattern EMBEDDED_MINDMAP = Pattern.compile(
+            "```[a-zA-Z]*\\s*\\R(\\s*mindmap\\b[\\s\\S]*?)```");
+
+    /** Markdown 标题:# 文档标题 / ## 模块 / ### 功能点。 */
+    private static final Pattern HEADING = Pattern.compile("(?m)^(#{1,4})[ \\t]+(.+?)[ \\t]*$");
+
+    private static final int MAX_MM_MODULES = 12;
+    private static final int MAX_MM_CHILDREN = 6;
+
+    /** 元信息类章节(非功能模块),不进测试点脑图。 */
+    private static final List<String> SKIP_HEADINGS = List.of(
+            "修改记录", "修订", "变更记录", "目录", "术语", "名词解释", "版本说明", "参考", "附录", "文档说明");
+
+    private record Heading(int level, String text) {
+    }
+
+    /** 一个功能模块(## 标题)及其下的功能点标题。 */
+    private static final class MmModule {
+        final String text;
+        final List<Heading> children = new ArrayList<>();
+
+        MmModule(String text) {
+            this.text = text;
+        }
+    }
+
     @Override
     public GenArtifacts generate(String prd) {
         List<String> scenarios = splitScenarios(prd);
@@ -48,7 +77,7 @@ public class HeuristicTestCaseGenerator implements TestCaseGenerator {
         // 优先采用文档自带的流程图(最贴合真实业务);没有则按(裁剪后的)场景生成。
         String embedded = extractEmbeddedFlowchart(prd);
         String flowchart = embedded != null ? embedded : buildFlowchart(diagramScenarios);
-        String mindmap = buildMindmap(diagramScenarios);
+        String mindmap = buildMindmap(prd, diagramScenarios);
         return new GenArtifacts(cases, flowchart, mindmap);
     }
 
@@ -157,8 +186,113 @@ public class HeuristicTestCaseGenerator implements TestCaseGenerator {
         }
     }
 
-    /** 测试点脑图:根 -> 每个场景 -> 正常/异常/边界 测试点。 */
-    private String buildMindmap(List<String> scenarios) {
+    /**
+     * 测试点脑图:优先用文档自带 mindmap;其次按 PRD 章节标题层级生成(最清晰);
+     * 文档无标题结构时,按场景兜底。
+     */
+    private String buildMindmap(String prd, List<String> scenarios) {
+        String embedded = extractEmbeddedMindmap(prd);
+        if (embedded != null) {
+            return embedded;
+        }
+        String byHeadings = buildMindmapFromHeadings(prd);
+        if (byHeadings != null) {
+            return byHeadings;
+        }
+        return buildMindmapFromScenarios(scenarios);
+    }
+
+    /** 从 PRD 正文里提取已经写好的 Mermaid 脑图;没有则返回 null。 */
+    private String extractEmbeddedMindmap(String prd) {
+        if (prd == null) {
+            return null;
+        }
+        Matcher m = EMBEDDED_MINDMAP.matcher(prd);
+        if (m.find()) {
+            String code = m.group(1).strip();
+            return code.isEmpty() ? null : code;
+        }
+        return null;
+    }
+
+    /**
+     * 按 Markdown 标题层级生成测试点脑图:# 文档标题为根,## 为功能模块,###/#### 为功能点;
+     * 模块下若无子标题则补充标准测试维度。结构不足(有效模块 &lt; 2)时返回 null 交由兜底。
+     */
+    private String buildMindmapFromHeadings(String prd) {
+        if (prd == null) {
+            return null;
+        }
+        List<Heading> heads = new ArrayList<>();
+        Matcher m = HEADING.matcher(prd);
+        while (m.find()) {
+            String text = cleanHeading(m.group(2));
+            if (!text.isEmpty()) {
+                heads.add(new Heading(m.group(1).length(), text));
+            }
+        }
+        if (heads.isEmpty()) {
+            return null;
+        }
+
+        // 根节点固定用简短标签:mermaid 根节点对长文字(尤其中英混排)定位不准、易偏移/溢出,
+        // 短标签能稳定居中;文档内容已由各模块体现,无需把长标题塞进根节点。
+        String rootLabel = "测试点";
+
+        // 第一遍:把标题分组为「## 模块 -> 其下功能点」(过滤元信息章节,限制数量)。
+        List<MmModule> mods = new ArrayList<>();
+        MmModule current = null;
+        boolean skipping = false;
+        for (Heading h : heads) {
+            if (h.level() <= 1) {
+                continue;
+            }
+            if (h.level() == 2) {
+                if (isSkipHeading(h.text()) || mods.size() >= MAX_MM_MODULES) {
+                    skipping = true;
+                    current = null;
+                    continue;
+                }
+                skipping = false;
+                current = new MmModule(h.text());
+                mods.add(current);
+            } else if (!skipping && current != null && current.children.size() < MAX_MM_CHILDREN) {
+                current.children.add(h);
+            }
+        }
+        // 模块太少说明文档没有清晰标题结构,交给场景兜底。
+        if (mods.size() < 2) {
+            return null;
+        }
+
+        // 第二遍:输出。所有节点统一为纯文本(形状一致,不再「有的有框有的没框」);
+        // 层次区分交给 mermaid 脑图自带能力:模块字号更大、各分支自动配色、内容字号更小并继承分支色。
+        // 功能点按「归一化深度」缩进,避免 ## 直接跳到 #### 时父子关系错位。
+        StringBuilder sb = new StringBuilder("mindmap\n");
+        // 用圆角矩形作根节点(而非圆形):mermaid 圆形节点文字常垂直偏移,矩形能可靠居中。
+        sb.append("  root(").append(rootLabel).append(")\n");
+        for (MmModule mod : mods) {
+            sb.append("    ").append(mod.text).append('\n');
+            if (mod.children.isEmpty()) {
+                sb.append("      正常流程\n      异常输入\n      边界值\n      权限校验\n");
+                continue;
+            }
+            Deque<Integer> stack = new ArrayDeque<>();
+            stack.push(2); // 模块自身层级,作为深度基准
+            for (Heading child : mod.children) {
+                while (stack.size() > 1 && stack.peek() >= child.level()) {
+                    stack.pop();
+                }
+                int depth = stack.size() + 1; // 模块=1,功能点=2,子功能点=3
+                sb.append(" ".repeat(depth * 2 + 2)).append(child.text()).append('\n');
+                stack.push(child.level());
+            }
+        }
+        return sb.toString();
+    }
+
+    /** 场景兜底脑图:根 -> 每个场景 -> 正常/异常/边界/权限 测试点。 */
+    private String buildMindmapFromScenarios(List<String> scenarios) {
         StringBuilder sb = new StringBuilder("mindmap\n");
         sb.append("  root((测试点))\n");
         if (scenarios.isEmpty()) {
@@ -166,13 +300,33 @@ public class HeuristicTestCaseGenerator implements TestCaseGenerator {
             return sb.toString();
         }
         for (String scenario : scenarios) {
-            sb.append("    ").append(sanitize(scenario)).append("\n");
-            sb.append("      正常流程\n");
-            sb.append("      异常输入\n");
-            sb.append("      边界值\n");
-            sb.append("      权限校验\n");
+            sb.append("    ").append(sanitize(scenario)).append('\n');
+            sb.append("      正常流程\n      异常输入\n      边界值\n      权限校验\n");
         }
         return sb.toString();
+    }
+
+    /** 是否为元信息类章节(不计入功能模块)。 */
+    private boolean isSkipHeading(String text) {
+        for (String kw : SKIP_HEADINGS) {
+            if (text.contains(kw)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** 清洗标题:去掉前导编号(如 "2.10"、"三、")后再做通用清洗;空则返回空串。 */
+    private String cleanHeading(String text) {
+        if (text == null) {
+            return "";
+        }
+        String t = text.replaceAll("^[\\s\\d.、)）\\-]+", "").trim();
+        if (t.isEmpty()) {
+            return "";
+        }
+        String cleaned = sanitize(t);
+        return "节点".equals(cleaned) ? "" : cleaned;
     }
 
     /**
@@ -188,7 +342,9 @@ public class HeuristicTestCaseGenerator implements TestCaseGenerator {
                 // 以及会出现在 URL/路径里的 : / \ ? & = % ~ @ . * 等。
                 .replaceAll("[\\[\\]{}()<>\"'`|;#\\\\:/?&=%~@.*!^$]", " ")
                 .replaceAll("-+>", " ")
-                .replaceAll("[-_]{2,}", " ")
+                // 下划线会被 Mermaid 当作斜体标记,且常导致换行错位,统一换成空格。
+                .replaceAll("_+", " ")
+                .replaceAll("-{2,}", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
         if (cleaned.length() > 24) {

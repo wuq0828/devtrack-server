@@ -42,7 +42,8 @@ function loadMermaid() {
         startOnLoad: false,
         theme: 'dark',
         securityLevel: 'loose',
-        fontFamily: 'inherit',
+        // 显式字体(测量与渲染同一字体),避免 'inherit' 导致中文宽度算错、节点文字偏移/溢出。
+        fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif',
         // SVG <text> labels (not <foreignObject>/HTML) so the diagram can be
         // rasterised to PNG reliably via canvas.
         htmlLabels: false,
@@ -107,13 +108,55 @@ async function renderToSvg(
     document.getElementById(id)?.remove()
     document.getElementById(`d${id}`)?.remove()
     const { svg } = await mermaid.render(id, code)
-    return svg
+    return centerMindmapLabels(svg)
   }
   try {
     return await attempt()
   } catch {
     // Single retry — clears transient state left by a previous failed render.
     return await attempt()
+  }
+}
+
+/**
+ * Mermaid mind-map mis-positions node labels (text sits right of the box).
+ * Force every mind-map node's label to the centre of its box rect.
+ * Handles both renderings: SVG <text>/<tspan> (mermaid 11.x in-browser) and
+ * <foreignObject> (some builds). DOM-based, robust to version/format.
+ */
+function centerMindmapLabels(svg: string): string {
+  try {
+    const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
+    const root = doc.documentElement
+    if (root.querySelector('parsererror')) return svg
+
+    root.querySelectorAll('g[class*="mindmap-node"]').forEach((g) => {
+      const rect = Array.from(g.querySelectorAll('rect')).find(
+        (r) => parseFloat(r.getAttribute('width') || '0') > 0,
+      )
+      if (!rect) return
+      const cx =
+        parseFloat(rect.getAttribute('x') || '0') +
+        parseFloat(rect.getAttribute('width') || '0') / 2
+
+      // SVG text label
+      const text = g.querySelector('text')
+      if (text) {
+        text.setAttribute('text-anchor', 'middle')
+        text.setAttribute('x', String(cx))
+        text.querySelectorAll('tspan').forEach((ts) => ts.setAttribute('x', String(cx)))
+      }
+      // foreignObject label (other mermaid builds)
+      g.querySelectorAll('foreignObject').forEach((fo) => {
+        const w = parseFloat(fo.getAttribute('width') || '0')
+        const h = parseFloat(fo.getAttribute('height') || '0')
+        if (w > 0) fo.setAttribute('x', String(cx - w / 2))
+        if (h > 0) fo.setAttribute('y', String(-h / 2))
+      })
+    })
+    return new XMLSerializer().serializeToString(root)
+  } catch {
+    return svg
   }
 }
 
